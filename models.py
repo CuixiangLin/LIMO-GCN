@@ -12,19 +12,18 @@ class LIMOGCN(nn.Module):
         self.fc2 = nn.Linear(nhid,nclass)
         self.dropout = dropout
     def forward(self, x, adj,a):
-        # GCN part
+        # linear part
         y1=0
         if a!=0:
-            x = F.relu(self.gc1(x, adj))
-            y=x.detach().numpy()
-            x = self.gc2(x, adj)
-            y1 = F.log_softmax(x, dim=1)
-        # linear part
-        y2=0
-        if (1-a)!=0:
             x1 = self.fc1(x)
-            x1=x1.detach().numpy()
-            y2 = self.fc2(x1)
+            y1 = self.fc2(x1)
+            y1 = F.log_softmax(y1, dim=1)
+        # GCN part
+        y2=0
+        if (a-1)!=0:
+            x2 = F.relu(self.gc1(x, adj))
+            x2 = F.dropout(x2, self.dropout, training=self.training)
+            y2 = self.gc2(x2, adj)
             y2 = F.log_softmax(y2, dim=1)
         y = a*y1+(1-a)*y2
         return y
